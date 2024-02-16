@@ -1,0 +1,52 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Load the training dataset
+train_data = pd.read_csv('/content/drive/MyDrive/Mll/Participants_Data_HPP/Train.csv')
+
+# Assuming 'TARGET(PRICE_IN_LACS)' is your target variable
+X = train_data.drop('TARGET(PRICE_IN_LACS)', axis=1)
+y = train_data['TARGET(PRICE_IN_LACS)']
+
+# Identify categorical and numerical columns
+categorical_cols = ['POSTED_BY']
+numerical_cols = X.select_dtypes(include=['number']).columns.tolist()
+
+# Create transformers for numerical and categorical columns
+numeric_transformer = StandardScaler()
+categorical_transformer = OneHotEncoder(drop='first', sparse=False)
+
+# Create a column transformer
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numerical_cols),
+        ('cat', categorical_transformer, categorical_cols)
+    ])
+
+# Create a pipeline with preprocessing and a linear regression model
+model = Pipeline(steps=[('preprocessor', preprocessor),
+                         ('regressor', LinearRegression())])
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Fit the model
+model.fit(X_train, y_train)
+
+# Make predictions on the test set
+predictions = model.predict(X_test)
+
+# Evaluate the model
+mse = mean_squared_error(y_test, predictions)
+print(f'Mean Squared Error: {mse}')
+
+# Save the complete model 
+joblib.dump(model, 'complete_model.joblib')
